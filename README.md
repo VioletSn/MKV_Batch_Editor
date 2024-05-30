@@ -1,14 +1,16 @@
 # MKV Batch Editor
 
 This Powershell script utilises MKVToolNix to batch edit .MKV files.
+
 I like to have all my mkv files organised in the same way, but i find it difficult to edit them in other batch programs which feel restricted as they require you to already know what tracks are what in your files and assume that they are all the same.
-As well as this, the scripts main feature is language swapping currently between two different languages. This changes the default audio and subtitle track on the file so it doesn't need to be changed manually everytime you start the video.
+The scripts main feature is language swapping currently between two different languages. This changes the default audio and subtitle track on the file so it doesn't need to be changed manually everytime you start the video.
+
 Anyway if you happen to use this script i hope you like it and any feedback to make it better or more efficient would be welcome ❤️
 
 ## Functions
 
-- The script works by generating and then reading off JSON files created for each MKV video.
-- After one of the functions below are selected the MKV videos are checked if they have the same number of tracks.
+- The script works by generating and then reading off JSON files created for each MKV video
+- After one of the functions below are selected the MKV videos are checked if they have the same number of tracks
 
 **Note:** Many of these functions rely on knowing the ID of the track you want to edit, function 4 will give you this information if you do not already know.
 
@@ -19,8 +21,10 @@ Exits the script and removes JSON files automatically if they were previously ge
 ### 2. Reordering Tracks
 
 Used to reorder tracks such as subtitle or audio.
+
 Simply enter the new track order when prompted (in terms of Track ID).
 - This will create a new folder and place the reordered videos into there
+
 **Note:** This function will not overwrite the original files
 
 **Example:** if you want to swap track 3 and 4, type in: 0,1,2,4,3
@@ -45,6 +49,7 @@ Removes all tags (i think? i only used this once)
 
 Just input the track ID of the track(s) to remove
 - This will create a new folder and place the videos with removed tracks into there
+
 **Note:** This function will not overwrite the original files
 
 ### 7. Rename Track
@@ -60,7 +65,7 @@ This function renames a single track across all files
 - Powershell 7
 - MKVToolNix
 
-Simply download the .psy file and place it in the folder along with the MKV files you want to edit (script targets .mkv extension and will ignore other files in the same folder) and then double click to run it.
-If its working properly it should display the files it can see when it opens.
+Simply download the .psy file and place it in the folder along with the MKV files you want to edit (script targets .mkv extension and will ignore other files in the same folder) and then double click to run it. If its working properly it should display the files it can see when it opens.
+
 If there are files moved in or out of the folder the script needs restart.
 
