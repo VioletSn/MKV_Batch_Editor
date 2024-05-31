@@ -7,6 +7,27 @@ The scripts main feature is language swapping currently between two different la
 
 Anyway if you happen to use this script i hope you like it and any feedback to make it better or more efficient would be welcome ❤️
 
+## Useage
+
+**Requires:**
+- Powershell 7
+- MKVToolNix
+
+### Method 1
+
+Simply download the "!Master.psy" file and place it in the folder along with the MKV files you want to edit (The script targets .mkv extension and will ignore other files) and then double click to run. If its working properly it should display the files it can see when it opens.
+
+### Method 2
+
+If you find youself constantly moving the script around, you can also download the "!RUN - MKVBatchEdit.bat" file and follow the steps:
+1. Place the !Master.psy in a permanent location which you wont change
+2. Edit the .bat file and change the "script_path" variable to where you placed the !Master.psy
+3. **OPTINAL:** If you saved Powershell 7 in a non-default location, change the begining of line 3 to your "pwsh.exe" location
+
+Now you only have to move the .bat file around and not the main script (more useful if you are editing the main script and dont want multiple versions).
+
+**Note:** If there are files moved in or out of the folder the script needs restart.
+
 ## Functions
 
 - The script works by generating and then reading off JSON files created for each MKV video
@@ -58,14 +79,3 @@ This function renames a single track across all files
 - The user first has to identify which track to rename in the format: _type_+_local track number_
   - v= video, a= audio, s= subtitle
   - local track number is relative to the amount of tracks of a certain type, e.g. if you have 2 audio tracks and want to edit the second you would input: v2
-
-## Useage
-
-**Requires:**
-- Powershell 7
-- MKVToolNix
-
-Simply download the .psy file and place it in the folder along with the MKV files you want to edit (script targets .mkv extension and will ignore other files in the same folder) and then double click to run it. If its working properly it should display the files it can see when it opens.
-
-If there are files moved in or out of the folder the script needs restart.
-
