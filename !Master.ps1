@@ -1,6 +1,8 @@
 [System.Console]::WindowWidth = 200
 [System.Console]::WindowHeight = 40
 
+$debug = $true
+
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {
 	$remainder = $value
@@ -40,16 +42,21 @@ $operation = 0
 while ($exit -ne 1) {
 	# Get user confirmation
 	Write-Host "======================== Operation =========================" -ForegroundColor blue
-	$operation = Read-Host -Prompt "Select Operation [Exit(1), Reorder Tracks(2), Language Switcher(3), Track Table(4), Remove Tags(5), Remove Tracks(6), Rename Track(7)]"
+	$operation = Read-Host -Prompt "Select Operation [Exit(1), Reorder Tracks(2), Language Switcher(3), Track Table(4), Remove Tags(5), Remove Tracks(6), Rename Track(7), Remove Independent Title(8)]"
 
 	if ($operation -eq "exit" -or $operation -eq "1") {
 		$exit = 1
-	} elseif (($operation -lt 2) -or ($operation -gt 7)) {
+	} elseif (($operation -lt 2) -or ($operation -gt 8)) {
 		Write-Host "Enter a valid integer input." -ForegroundColor DarkRed
 	} else {
+		Write-Host ""
 		# Create temp folder if it doesn't exist already
+		Write-Host "Creating temp Folder" -NoNewLine
 		if (!(Test-Path "temp")) {
-			New-Item -ItemType Directory -Name "temp"
+			[void] (New-Item -ItemType Directory -Name "temp")
+			Write-Host " >Done" -ForegroundColor Green
+		} else {
+			Write-Host " >Already Exists" -ForegroundColor Yellow
 		}
 		
 		$jsonCount = 0
@@ -57,25 +64,28 @@ while ($exit -ne 1) {
 		$mkvFiles = Get-ChildItem -Filter "*.mkv"
 
 		# Create JSONs for each mkv file
+		if ($debug -eq $false) { Write-Host "Generating JSON Files " -NoNewLine }
+		if ($debug -eq $true) { Write-Host "Generating JSON Files:" }
 		Get-ChildItem -Filter "*.mkv" | ForEach-Object {
 			& $mkvmerge --identification-format json --identify $_.FullName | Out-File "temp\$($_.BaseName.Replace('[','').Replace(']','')).json"
-			Write-Host "JSON created for: $($_.Name)" -ForegroundColor Magenta
+			if ($debug -eq $true) {
+				Write-Host "Done > $($_.Name)" -ForegroundColor Magenta
+			}
 			$jsonCount++
-			
 			$jsonFile = "temp\$($_.BaseName.Replace('[','').Replace(']','')).json"
 			$jsonContent = Get-Content $jsonFile
 			$jsonData = $jsonContent | ConvertFrom-Json
 			$tracks = $jsonData.tracks
-			
 			$currentTrackCount = $tracks.Count
 			$trackCounts[$_.Name] = $currentTrackCount
 		}
+		Write-Host ">Done " -ForegroundColor Green
 		
-		# Prevents the checking of JSONs before they are all created
+		# Check if Track Counts are Equal Across mkv Files
 		if ($jsonCount -eq $fileCount) {
-			Write-Host "CHECKING TRACKS..."
+			if ($debug -eq $false) { Write-Host "Checking Track Equality" -NoNewLine }
+			if ($debug -eq $true) { Write-Host "Checking Track Equality:" }
 			
-			# Check if Track Counts are Equal Across mkv Files
 			$countTable = @{} # Hashtable to store the count of each value in trackCounts hashtable
 			# Count occurrences of each value
 			foreach ($value in $trackCounts.Values) {
@@ -88,7 +98,10 @@ while ($exit -ne 1) {
 
 			# Find the most common track count among mkv files
 			$modeTrackCount = ($countTable.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
-			Write-Host "Mode Tracks: $modeTrackCount"
+			if ($debug -eq $true) {
+				Write-Host "Mode Tracks " -NoNewline
+				Write-Host ">$modeTrackCount" -ForegroundColor Yellow
+			}
 			
 			# Identify keys with mismatching track counts
 			$mismatchedKeys = @()
@@ -101,17 +114,26 @@ while ($exit -ne 1) {
 			if ($mismatchedKeys.Count -gt 0) {
 				$misMatch = 1
 				$currentTrackCountMis = $modeTrackCount
-				Write-Host "Track count mismatch found in the following files:" -ForegroundColor DarkRed
+				if ($debug -eq $false) {
+					Write-Host " >Mismatch Found in the Following Files:" -ForegroundColor DarkRed
+				} else {
+					Write-Host "Mismatch Found in the Following Files:" -ForegroundColor DarkRed
+				}
 				$mismatchedKeys | ForEach-Object {
 					Write-Host " - ("$trackCounts[$_] Tracks") $_" -ForegroundColor Red
 					if ($trackCounts[$_] -gt $currentTrackCountMis) {
 						$currentTrackCountMis = $trackCounts[$_]
-						Write-Host "Highest Count: $currentTrackCountMis" -ForegroundColor Magenta
+						if ($debug -eq $true) { Write-Host "Highest Count: $currentTrackCountMis" -ForegroundColor Magenta }
 					}
 				}
+				Write-Host ""
 			} else {
 				$misMatch = 0
-				Write-Host "All files have matching track counts" -ForegroundColor Green
+				if ($debug -eq $false) {
+					Write-Host " >Matching" -ForegroundColor Green
+				} else {
+					Write-Host "All files have matching track counts" -ForegroundColor Green
+				}
 			}
 		}
 		
@@ -672,6 +694,7 @@ while ($exit -ne 1) {
 				Write-Host ""
 			}
 			Write-Host "All files processed successfully!" -ForegroundColor green
+
 		} elseif ($operation -eq "Rename Track" -or $operation -eq "7") {
 
 			Write-Host "======================= Rename Track =======================" -ForegroundColor blue
@@ -684,6 +707,24 @@ while ($exit -ne 1) {
 				& $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName"
 			}
 			Write-Host "All files processed successfully!" -ForegroundColor green
+
+		} elseif ($operation -eq "Remove Independent Title" -or $operation -eq "8") {
+			Write-Host "Note- " -NoNewLine -ForegroundColor Yellow
+			Write-Host "This operation will set the filename to the mkv title"
+			$8Confirmation = Read-Host -Prompt "Continue? [Y/N]"
+
+			if ($8Confirmation -eq "Y" -or $8Confirmation -eq "y") {
+				
+				# Loops through all .mkv files within the current directory
+				foreach ($mkvFile in $mkvFiles) {
+					& $mkvpropedit "$mkvFile" -d title
+				}
+				
+				Write-Host "All files processed successfully!" -ForegroundColor green
+			} else {
+				$exit = 1
+			}
+
 		}
 	}
 }
