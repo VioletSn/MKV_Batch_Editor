@@ -2,6 +2,9 @@
 [System.Console]::WindowHeight = 40
 
 $debug = $true
+if ($debug -eq $true) {
+	Write-Host "Debug = $debug" -ForegroundColor DarkGray
+}
 
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {
@@ -28,10 +31,10 @@ $jsonFilesDirectory = "temp\"
 [int]$fileCount = 0
 Write-Host "===================== Files For Change =====================" -ForegroundColor blue
 Get-ChildItem -Filter "*.mkv" | ForEach-Object {
-	Write-Host $_.Name
+	Write-Host $_.BaseName
 	$fileCount++
 }
-Write-Host "File Count: $fileCount"
+Write-Host "`nFile Count: $fileCount"
 
 $exit = 0
 $currentTrackCountMis = 0
@@ -79,7 +82,7 @@ while ($exit -ne 1) {
 			$currentTrackCount = $tracks.Count
 			$trackCounts[$_.Name] = $currentTrackCount
 		}
-		Write-Host ">Done " -ForegroundColor Green
+		if ($debug -eq $false) { Write-Host ">Done " -ForegroundColor Green }
 		
 		# Check if Track Counts are Equal Across mkv Files
 		if ($jsonCount -eq $fileCount) {
@@ -130,7 +133,7 @@ while ($exit -ne 1) {
 			} else {
 				$misMatch = 0
 				if ($debug -eq $false) {
-					Write-Host " >Matching" -ForegroundColor Green
+					Write-Host " >Matching`n" -ForegroundColor Green
 				} else {
 					Write-Host "All files have matching track counts" -ForegroundColor Green
 				}
@@ -140,38 +143,62 @@ while ($exit -ne 1) {
 		if ($operation -eq "Reorder Tracks" -or $operation -eq "2") {
 			Write-Host "====================== Reorder Tracks ======================" -ForegroundColor blue
 			
-			$2newTrackOrder = Read-Host -Prompt "Enter the new track order (e.g., 0,1,2,4,3)"
+			$2newTrackOrder = Read-Host -Prompt "Enter new track order (e.g., 0,1,2,4,3)"
 			# Convert user input to MKVmerge format
 			$2newTrackOrder = "0:" + $2newTrackOrder -Replace ",\s*", ",0:"
 
-			Write-Host $2newTrackOrder
-			pause
+			if ($debug -eq $true) {
+				Write-Host $2newTrackOrder
+			}
 
+			Write-Host ""
 			# Ensure "MODIFIED" folder exists
+			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
-				New-Item -ItemType Directory -Name "MODIFIED"
+				[void] (New-Item -ItemType Directory -Name "MODIFIED")
+				Write-Host " >Done" -ForegroundColor green
+			} else {
+				Write-Host " >Already Exists" -ForegroundColor Yellow
 			}
 
 			# Loop through each MKV file
-			foreach ($mkvFile in $mkvFiles) {
-				Write-Host ""
-				Write-Host "============ Processing file: $mkvFile" -ForegroundColor blue
-				Write-Host ""
+			if ($debug -eq $true) {
+				foreach ($mkvFile in $mkvFiles) {
+					Write-Host ""
+					Write-Host "Processing " -NoNewline
+					Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
 
-				# Create a new file name for the output file
-				$outputFileName = "$($mkvFile.BaseName)_reordered.mkv"
-				
-				# Construct the full output file path
-				$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
-				
-				# Run MKVmerge to reorder the tracks
-				& $mkvmerge -o $outputFile "$mkvFile" --track-order $2newTrackOrder
-				
-				Write-Host "Reordered tracks and saved to: $outputFile" -ForegroundColor blue
-				Write-Host ""
+					# Create a new file name for the output file
+					$outputFileName = "$($mkvFile.BaseName)_reordered.mkv"
+					
+					# Construct the full output file path
+					$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
+					
+					# Run MKVmerge to reorder the tracks
+					& $mkvmerge -o $outputFile "$mkvFile" --track-order $2newTrackOrder
+					
+					Write-Host "Done." -ForegroundColor green
+				}
+				Write-Host "All files processed successfully!" -ForegroundColor green
+			} else {
+				$2processed = 0
+				Write-Host "Processing " -NoNewline
+				foreach ($mkvFile in $mkvFiles) {
+					Write-Progress -Activity "Reordering" -Status $mkvFile.BaseName -PercentComplete (($2processed / $fileCount) * 100)
+					$2processed++
+
+					# Create a new file name for the output file
+					$outputFileName = "$($mkvFile.BaseName)_reordered.mkv"
+					
+					# Construct the full output file path
+					$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
+					
+					# Run MKVmerge to reorder the tracks
+					& $mkvmerge -o $outputFile "$mkvFile" --track-order $2newTrackOrder > $null					
+				}
+				Write-Host ">Done" -ForegroundColor green
+				Write-Progress -Completed -Activity "Reordering" -Status "Complete" -PercentComplete 100
 			}
-
-			Write-Host "All files processed successfully!" -ForegroundColor green
 			
 		} elseif ($operation -eq "Language Switcher" -or $operation -eq "3") {
 			Write-Host "===================== Language Switcher =====================" -ForegroundColor blue
@@ -280,7 +307,7 @@ while ($exit -ne 1) {
 
 			# Clears multi (multiple track array) if there are no extra tracks
 			if ($highestTrackNum -le 2 -or $extraTrack -eq $false -or $multi.Count -eq $currentTrackCount -1) {
-				write-Host "Clearing multi"
+				Write-Host "Clearing multi"
 				$multi = @()
 			}
 
@@ -288,7 +315,9 @@ while ($exit -ne 1) {
 			Write-Host "track count:"$currentTrackCount
 
 			$multi | Format-Table -Autosize -Wrap
-			$array | Format-Table -Autosize -Wrap
+			if ($debug -eq $true) {
+				$array | Format-Table -Autosize -Wrap
+			}
 
 			# Function to check if tracks have the same values across files
 			function Confirm-TrackEquality {
@@ -314,13 +343,13 @@ while ($exit -ne 1) {
 						#DEBUG Write-Host "Current Property  :" $array[$j].Name"," $array[$j].ID"," $array[$j].Language"," $array[$j].Type"," $array[$j].Default
 						
 						if ((($array[$j].Language -ne $refLanguage) -or ($array[$j].Type -ne $refType) -or ($array[$j].ID -ne $refID) -or ($array[$j].Name -ne $refName) -or ($array[$j].Default -ne $refDefault)) -And (NotMultipleOf $j $fileCount)) {
-							Write-Host "FALSE" -ForegroundColor DarkRed
+							if ($debug -eq $true) { Write-Host "FALSE" -ForegroundColor DarkRed }
 							return $false
 						}
 					}
 					#DEBUG Write-Host "Track CLEARED" -ForegroundColor green
 				}
-				Write-Host "TRUE" -ForegroundColor green
+				if ($debug -eq $true) { Write-Host "TRUE" -ForegroundColor green }
 				return $true
 			}
 
@@ -346,10 +375,94 @@ while ($exit -ne 1) {
 				}
 				
 				if ($null -ne $activeLanguage) {
-					Write-Host "Active track language: $activeLanguage"
+					Write-Host "Active track language: " -NoNewline
+					Write-Host $activeLanguage -ForegroundColor Yellow
 					
 					$confirm = Read-Host "Swap Language? [Y/N]"
 					if ($confirm -eq "Y" -or $confirm -eq "y") {
+
+						# Create functions
+						function 3Reference () { # Function for generating reference data
+							if ($debug -eq $true) {
+								Write-Host "Reference " -NoNewline
+								Write-Host ">$mkvType$mkvNum" -ForegroundColor yellow
+							}
+						}
+
+						function 3DefaultEdit { # Function for switching default track
+							param(
+								[int] $defaultType,
+								[string] $switchMesg
+							)
+						
+							if ($debug -eq $true) {
+								& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=$defaultType
+								Write-Host "set" $trackInfo.Name "$switchMesg" -ForegroundColor Magenta
+							} else {
+								& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=$defaultType > $null
+							}
+						}
+
+						function 3SwitchLanguage { # Main function for utilising mkvPropEdit
+							param(
+								[string] $mkvType,
+								[string] $toDefault
+							)
+						
+							$mkvNum = $trackInfo.LocalTypeNum
+						
+							if ($extraTrack -eq $true) {
+								
+								# Identify track to set to default
+								Write-Host "Selected:"$toDefault
+								3Reference
+								
+								# Check for three tracks with specific default values
+								if ($trackInfo.Default -eq $true) {
+									3DefaultEdit -defaultType 0 -switchMesg "FALSE (all)" # set all tracks default false
+						
+									# Modify default settings based on user selection
+									if ($trackInfo.Name -eq $toDefault) {
+										3DefaultEdit -defaultType 1 -switchMesg "TRUE (selected)" # set selected tracks default true
+									} else {
+										3DefaultEdit -defaultType 0 -switchMesg "FALSE" # set unselected tracks default false
+									}
+								} elseif ($trackInfo.Default -eq $false) {
+									3DefaultEdit -defaultType 1 -switchMesg "TRUE (all)" # set all tracks default true
+						
+									# Modify default settings based on user selection
+									if ($trackInfo.Name -eq $toDefault) {
+										3DefaultEdit -defaultType 1 -switchMesg "TRUE (selected)" # set selected tracks default true
+									} else {
+										3DefaultEdit -defaultType 0 -switchMesg "FLASE" # set unselected tracks default false
+									}
+								}
+							
+							# No extra tracks
+							} elseif ($extraTrack -eq $false) {
+								if ($trackInfo.Default -eq $true) {
+									3Reference
+									3DefaultEdit -defaultType 0 -switchMesg "FALSE"
+						
+								} elseif ($trackInfo.Default -eq $false) {
+									3Reference
+									3DefaultEdit -defaultType 1 -switchMesg "TRUE"
+						
+									if ($mkvType -eq "a") {
+										if ($trackinfo.Language -eq $activeLanguage -and $multi.Count -ne 0) {
+											3Reference
+											3DefaultEdit -defaultType 0 -switchMesg "FALSE (reverse)"
+						
+										}
+									} elseif ($mkvType -eq "s") {
+										if ($trackinfo.Name -ne "Signs & Songs" -and $multi.Count -ne 0) {
+											3Reference
+											3DefaultEdit -defaultType 0 -switchMesg "FALSE (reverse)"
+										}
+									}
+								}
+							}
+						}
 
 						# places audio tracks from multi into isolated array before checking language equality
 						$audioMulti = $multi | Where-Object {$_.Type -eq "Audio"}
@@ -390,7 +503,7 @@ while ($exit -ne 1) {
 									foreach ($multiTracks in $multi) {
 										if ($audioConfirm -eq $multiTracks.LocalDefaultNum -and $multiTracks.Type -eq "Audio") {
 											Write-Host "Skip selected Audio Track [" $audioOptions[$audioConfirm] "] ID ["$multiTracks.ID"]"
-											$selectedAudio= $multiTracks.Name
+											$selectedAudio = $multiTracks.Name
 										} elseif ($audioConfirm -ne $multiTracks.LocalDefaultNum -and $multiTracks.Type -eq "Audio") {
 											Write-Host "Remove Audio Option ["$multiTracks.LocalDefaultNum"] ID ["$multiTracks.ID"]"
 											$toRemove = $multiTracks.Name
@@ -427,159 +540,53 @@ while ($exit -ne 1) {
 									}
 									$selectedSubtitle | format-table
 									$toRemove | format-table
-									
 								}
 							}
+						}
 
+						if ($debug -eq $false) {
+							Write-Host "`nSwitching Default Language " -NoNewline
+							$3processed = 0
+						} else {
+							Write-Host ""
 						}
 						
 						# Recurse through each MKV file and apply changes
 						Get-ChildItem -Filter "*.mkv" | ForEach-Object {
 							$currentFile = $_.Name
+
+							if ($debug -eq $false) {
+								Write-Progress -Activity "Switching" -Status $_.BaseName -PercentComplete (($3processed / $fileCount) * 100)
+								$3processed++
+							}
 							
-							Write-Host "Switching:" $currentFile -ForegroundColor DarkBlue
+							if ($debug -eq $true) {
+								Write-Host "Switching " -NoNewline
+								Write-Host (">" + $_.BaseName) -ForegroundColor Yellow
+							}
 							
 							[int]$index = 0
 							foreach ($trackInfo in $array) {
 								if (!(NotMultipleOf $index $fileCount)) {
 									if ($trackInfo.Type -eq 'audio') {
-
-										$mkvType = "a"
-										$mkvNum = $trackInfo.LocalTypeNum
-
-										if ($extraTrack -eq $true) {
-											
-											# Identify tracks with same default value
-											$toDefault = $selectedAudio
-											Write-Host "Selected:"$selectedAudio
-											
-											Write-Host "reference: $mkvType$mkvNum"
-											
-											# Check for three audio tracks with specific default values
-											if ($trackInfo.Default -eq $true) {
-												
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set all tracks default false
-												Write-Host "set" $trackInfo.Name "Default FALSE (all)" -ForegroundColor Magenta
-
-												# Modify default settings based on user selection
-												if ($trackInfo.Name -eq $toDefault) {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set selected Audio track default true
-													Write-Host "set" $trackInfo.Name "Default TRUE (selected)" -ForegroundColor Magenta
-												} else {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set unselected track default false
-													Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-												}
-											} elseif ($trackInfo.Default -eq $false) {
-												
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set all tracks default true
-												Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-
-												# Modify default settings based on user selection
-												if ($trackInfo.Name -eq $toDefault) {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set selected Audio track default true
-													Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-												} else {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set unselected track default false
-													Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-												}
-											}
+										3SwitchLanguage -mkvType "a" -toDefault $selectedAudio
 										
-										# No extra tracks
-										} elseif ($extraTrack -eq $false) {
-											if ($trackInfo.Default -eq $true) {
-												
-												Write-Host "reference: $mkvType$mkvNum"
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 # Set default false
-												Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-
-											} elseif ($trackInfo.Default -eq $false) {
-												
-												Write-Host "reference: $mkvType$mkvNum"
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 # Set default true
-												Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-
-												if ($trackinfo.Language -eq $activeLanguage -and $multi.Count -ne 0) {
-													
-													Write-Host "reference: $mkvType$mkvNum"
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 # Set default false
-													Write-Host "set" $trackInfo.Name "Default FALSE (reverse)" -ForegroundColor Magenta
-												}
-											}
-										}
 									} elseif ($trackInfo.Type -eq 'subtitles') {
-
-										$mkvType = "s"
-										$mkvNum = $trackInfo.LocalTypeNum
-
-										if ($extraTrack -eq $true) {
-											
-											# Identify tracks with same default value
-											$toDefault = $selectedSubtitle
-											Write-Host "Selected:"$selectedSubtitle
-											
-											Write-Host "reference: $mkvType$mkvNum"
-											
-											# Check for three subtitle tracks with specific default values
-											if ($trackInfo.Default -eq $true) {
-												
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set all tracks default false
-												Write-Host "set" $trackInfo.Name "Default FALSE (all)" -ForegroundColor Magenta
-
-												# Modify default settings based on user selection
-												if ($trackInfo.Name -eq $toDefault) {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set selected Subtitle track default true
-													Write-Host "set" $trackInfo.Name "Default TRUE (selected)" -ForegroundColor Magenta
-												} else {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set unselected track default false
-													Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-												}
-											} elseif ($trackInfo.Default -eq $false) {
-												
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set all tracks default true
-												Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-
-												# Modify default settings based on user selection
-												if ($trackInfo.Name -eq $toDefault) {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 #set selected Subtitle track default true
-													Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-												} else {
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 #set unselected track default false
-													Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-												}
-											}
-										
-										# If there are no extra tracks
-										} elseif ($extraTrack -eq $false) {
-											if ($trackInfo.Default -eq $true) {
-												
-												Write-Host "reference: $mkvType$mkvNum"
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 # Set default false
-												Write-Host "set" $trackInfo.Name "Default FALSE" -ForegroundColor Magenta
-												
-											} elseif ($trackInfo.Default -eq $false) {
-												
-												Write-Host "reference: $mkvType$mkvNum"
-												& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=1 # Set default true
-												Write-Host "set" $trackInfo.Name "Default TRUE" -ForegroundColor Magenta
-
-												if ($trackinfo.Name -ne "Signs & Songs" -and $multi.Count -ne 0) {
-
-													Write-Host "reference: $mkvType$mkvNum"
-													& $mkvpropedit $currentFile --edit track:$mkvType$mkvNum --set flag-default=0 # Set default false
-													Write-Host "set" $trackInfo.Name "Default FALSE (reverse)" -ForegroundColor Magenta
-												}
-											}
-										}
+										3SwitchLanguage -mkvType "s" -toDefault $selectedSubtitle
 									}
 								}
 								$index++
-								
 							}
+						}
+						Write-Host ">Done" -ForegroundColor Green
+						if ($debug -eq $false) {
+							Write-Progress -Completed -Activity "Switching" -Status "Complete" -PercentComplete 100
+							$3processed = 0
 						}
 					} else {
 						$exit = 1
 					}
-					Write-Host "Successfully changed track defaults from [$activeLanguage]--->[$newLanguage]" -ForegroundColor green
+					Write-Host "Successfully switched language from [$activeLanguage]--->[$newLanguage]" -ForegroundColor DarkGreen
 				} else {
 					Write-Host "No active audio track found with Default = True" -ForegroundColor DarkRed
 				}
@@ -619,7 +626,6 @@ while ($exit -ne 1) {
 								Default = ""
 							}
 						}
-						
 						$array += $trackInfo
 					}
 					$counter++
@@ -648,55 +654,105 @@ while ($exit -ne 1) {
 			$array | Format-Table -Autosize -Wrap
 			
 		} elseif ($operation -eq "Remove Tags" -or $operation -eq "5") {
+			Write-Host "======================= Remove Tags ========================" -ForegroundColor blue
 			Write-Host "WARNING- " -NoNewLine -ForegroundColor DarkRed
 			Write-Host "This Operation Removes ALL Tags from the file." -ForegroundColor Red
 			$5Confirmation = Read-Host -Prompt "Continue? [Y/N]"
-
-			Write-Host $5Confirmation
+			Write-Host ""
 
 			if ($5Confirmation -eq "Y" -or $5Confirmation -eq "y") {
-				
 				# Loops through all .mkv files within the current directory
-				foreach ($mkvFile in $mkvFiles) {
-					& $mkvpropedit "$mkvFile" --tags all:
+				if ($debug -eq $true) {
+					foreach ($mkvFile in $mkvFiles) {
+						# Run MKVpropedit to remove tags
+						$5peOutput = & $mkvpropedit "$mkvFile" --tags all:
+
+						# Modify and display output
+						$5peOutputLinesMod = $5peOutput.Trim().Split([Environment]::NewLine)
+						foreach ($line in $5peOutputLinesMod) {
+							switch ($line) {
+								"The file is being analyzed." {
+									Write-Host "Analyzing " -NoNewline
+									Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
+								}
+								"Done." {
+									Write-Host "Done." -ForegroundColor Green
+								}
+								default { Write-Host $line }
+							}
+						}
+					}
+					Write-Host "All files processed successfully!" -ForegroundColor green
+				} else {
+					$5processed = 0
+					Write-Host "Processing " -NoNewline
+					foreach ($mkvFile in $mkvFiles) {
+						Write-Progress -Activity "Removing Tags" -Status $mkvFile.BaseName -PercentComplete (($5processed / $fileCount) * 100)
+						$5processed++
+
+						& $mkvpropedit "$mkvFile" --tags all: > $null
+					}
+					Write-Host ">Done" -ForegroundColor green
+					Write-Progress -Completed -Activity "Removing Tags" -Status "Complete" -PercentComplete 100
 				}
-				
-				Write-Host "All files processed successfully!" -ForegroundColor green
 			} else {
 				$exit = 1
 			}
 			
 		} elseif ($operation -eq "Remove Tracks" -or $operation -eq "6") {
-			
+			Write-Host "====================== Remove Tracks =======================" -ForegroundColor blue
 			$6tracksToRemove = Read-Host -Prompt "List Tracks to Remove (e.g. 0,3,4)"
 			
+			Write-Host ""
 			# Ensure "MODIFIED" folder exists
+			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
-				New-Item -ItemType Directory -Name "MODIFIED"
+				[void] (New-Item -ItemType Directory -Name "MODIFIED")
+				Write-Host " >Done" -ForegroundColor green
+			} else {
+				Write-Host " >Already Exists" -ForegroundColor Yellow
 			}
 			
 			# Loop through each MKV file
-			foreach ($mkvFile in $mkvFiles) {
-				Write-Host ""
-				Write-Host "============ Processing file: $mkvFile" -ForegroundColor blue
-				Write-Host ""
-				
-				# Create a new file name for the output file
-				$outputFileName = "$($mkvFile.BaseName)_MODIFIED.mkv"
-				
-				# Construct the full output file path
-				$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
-				
-				# Run MKVmerge to reorder the tracks and create the new file
-				& $mkvmerge -o $outputFile --audio-tracks !$6tracksToRemove --video-tracks !$6tracksToRemove --subtitle-tracks !$6tracksToRemove "$mkvFile"
-				
-				Write-Host "Removed tracks and saved to: $outputFile" -ForegroundColor blue
-				Write-Host ""
+			if ($debug -eq $true) {
+				foreach ($mkvFile in $mkvFiles) {
+					Write-Host ""
+					Write-Host "Processing " -NoNewline
+					Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
+					
+					# Create a new file name for the output file
+					$outputFileName = "$($mkvFile.BaseName)_MODIFIED.mkv"
+					
+					# Construct the full output file path
+					$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
+					
+					# Run MKVmerge to reorder the tracks and create the new file
+					& $mkvmerge -o $outputFile --audio-tracks !$6tracksToRemove --video-tracks !$6tracksToRemove --subtitle-tracks !$6tracksToRemove "$mkvFile"
+					
+					Write-Host "Done." -ForegroundColor Green
+				}
+				Write-Host "All files processed successfully!" -ForegroundColor green
+			} else {
+				$6processed = 0
+				Write-Host "Processing " -NoNewline
+				foreach ($mkvFile in $mkvFiles) {
+					Write-Progress -Activity "Removing Tracks" -Status $mkvFile.BaseName -PercentComplete (($6processed / $fileCount) * 100)
+					$6processed++
+
+					# Create a new file name for the output file
+					$outputFileName = "$($mkvFile.BaseName)_MODIFIED.mkv"
+					
+					# Construct the full output file path
+					$outputFile = Join-Path -Path "MODIFIED" -ChildPath $outputFileName
+					
+					# Run MKVmerge to reorder the tracks and create the new file
+					& $mkvmerge -o $outputFile --audio-tracks !$6tracksToRemove --video-tracks !$6tracksToRemove --subtitle-tracks !$6tracksToRemove "$mkvFile" > $null
+				}
+				Write-Host ">Done" -ForegroundColor Green
+				Write-Progress -Completed -Activity "Removing Tracks" -Status "Complete" -PercentComplete 100
 			}
-			Write-Host "All files processed successfully!" -ForegroundColor green
 
 		} elseif ($operation -eq "Rename Track" -or $operation -eq "7") {
-
 			Write-Host "======================= Rename Track =======================" -ForegroundColor blue
 			$7renameTrack = Read-Host -Prompt "Which track do you want to rename? (e.g. v1,a2)"
 			$7newName = Read-Host -Prompt "Enter the new name"
@@ -704,46 +760,79 @@ while ($exit -ne 1) {
 
 			# Loop through each MKV file
 			if ($debug -eq $true) {
-				Write-Host "Editing Files:"
 				foreach ($mkvFile in $mkvFiles) {
 					# Run MKVpropedit to rename the desired track
-					$peOutput = & $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName"
+					$7peOutput = & $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName"
 
 					# Modify and display output
-					$peOutputLinesMod = $peOutput.Trim().Split([Environment]::NewLine)
-					foreach ($line in $peOutputLinesMod) {
+					$7peOutputLinesMod = $7peOutput.Trim().Split([Environment]::NewLine)
+					foreach ($line in $7peOutputLinesMod) {
 						switch ($line) {
-						"The file is being analyzed." {
-							Write-Host "Analyzing " -NoNewLine
-							Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
-						}
-						default { Write-Host $line }
+							"The file is being analyzed." {
+								Write-Host "Analyzing " -NoNewLine
+								Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
+							}
+							"Done." {
+								Write-Host "Done." -ForegroundColor Green
+							}
+							default { Write-Host $line }
 						}
 					}
-					Write-Host ""
 				}
 				Write-Host "All files processed successfully!" -ForegroundColor green
 			} else {
-				Write-Host "Editing Files " -NoNewLine
+				$7processed = 0
+				Write-Host "Processing " -NoNewLine
 				foreach ($mkvFile in $mkvFiles) {
+					Write-Progress -Activity "Renaming" -Status $mkvFile.BaseName -PercentComplete (($7processed / $fileCount) * 100)
+					$7processed++
+					
 					& $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName" > $null
 				}
 				Write-Host ">Done" -ForegroundColor green
+				Write-Progress -Completed -Activity "Renaming" -Status "Complete" -PercentComplete 100
 			}
 
 		} elseif ($operation -eq "Remove Independent Title" -or $operation -eq "8") {
+			Write-Host "================= Remove Independent Title =================" -ForegroundColor blue
 			Write-Host "Note- " -NoNewLine -ForegroundColor Yellow
-			Write-Host "This operation will set the filename to the mkv title"
+			Write-Host "This operation will set the mkv title to the filename"
 			$8Confirmation = Read-Host -Prompt "Continue? [Y/N]"
 
 			if ($8Confirmation -eq "Y" -or $8Confirmation -eq "y") {
-				
-				# Loops through all .mkv files within the current directory
-				foreach ($mkvFile in $mkvFiles) {
-					& $mkvpropedit "$mkvFile" -d title
+				if ($debug -eq $true) {
+					foreach ($mkvFile in $mkvFiles) {
+						# Run MKVpropedit to remove title tag
+						$8peOutput = & $mkvpropedit "$mkvFile" -d title
+
+						# Modify and display output
+						$8peOutputLinesMod = $8peOutput.Trim().Split([Environment]::NewLine)
+						foreach ($line in $8peOutputLinesMod) {
+							switch ($line) {
+								"The file is being analyzed." {
+									Write-Host "Analyzing " -NoNewLine
+									Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
+								}
+								"Done." {
+									Write-Host "Done." -ForegroundColor Green
+								}
+								default { Write-Host $line }
+							}
+						}
+					}
+					Write-Host "All files processed successfully!" -ForegroundColor green
+				} else {
+					$8processed = 0
+					Write-Host "Processing " -NoNewLine
+					foreach ($mkvFile in $mkvFiles) {
+						Write-Progress -Activity "Remove Title Tag" -Status $mkvFile.BaseName -PercentComplete (($8processed / $fileCount) * 100)
+						$8processed++
+						
+						& $mkvpropedit "$mkvFile" -d title > $null
+					}
+					Write-Host ">Done" -ForegroundColor green
+					Write-Progress -Completed -Activity "Remove Title Tag" -Status "Complete" -PercentComplete 100
 				}
-				
-				Write-Host "All files processed successfully!" -ForegroundColor green
 			} else {
 				$exit = 1
 			}
