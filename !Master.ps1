@@ -700,13 +700,36 @@ while ($exit -ne 1) {
 			Write-Host "======================= Rename Track =======================" -ForegroundColor blue
 			$7renameTrack = Read-Host -Prompt "Which track do you want to rename? (e.g. v1,a2)"
 			$7newName = Read-Host -Prompt "Enter the new name"
+			Write-Host ""
 
 			# Loop through each MKV file
-			foreach ($mkvFile in $mkvFiles) {
-				# Run MKVpropedit to rename the desired track
-				& $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName"
+			if ($debug -eq $true) {
+				Write-Host "Editing Files:"
+				foreach ($mkvFile in $mkvFiles) {
+					# Run MKVpropedit to rename the desired track
+					$peOutput = & $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName"
+
+					# Modify and display output
+					$peOutputLinesMod = $peOutput.Trim().Split([Environment]::NewLine)
+					foreach ($line in $peOutputLinesMod) {
+						switch ($line) {
+						"The file is being analyzed." {
+							Write-Host "Analyzing " -NoNewLine
+							Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
+						}
+						default { Write-Host $line }
+						}
+					}
+					Write-Host ""
+				}
+				Write-Host "All files processed successfully!" -ForegroundColor green
+			} else {
+				Write-Host "Editing Files " -NoNewLine
+				foreach ($mkvFile in $mkvFiles) {
+					& $mkvpropedit $mkvFile --edit track:$7renameTrack --set name="$7newName" > $null
+				}
+				Write-Host ">Done" -ForegroundColor green
 			}
-			Write-Host "All files processed successfully!" -ForegroundColor green
 
 		} elseif ($operation -eq "Remove Independent Title" -or $operation -eq "8") {
 			Write-Host "Note- " -NoNewLine -ForegroundColor Yellow
