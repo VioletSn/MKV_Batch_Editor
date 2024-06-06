@@ -27,6 +27,7 @@ If you find youself constantly moving the script around, you can also download t
 Now you only have to move the .bat file around and not the main script (more useful if you are editing the main script and dont want multiple versions).
 
 **Note:** If there are files moved in or out of the folder the script needs restart.
+**Note:** There is a debug option on line 4 of the !Master.ps1 which can be set to $false if you want a more clean output window and less information.
 
 ## Functions
 
@@ -60,7 +61,7 @@ Swaps the default language by inverting the default property of audio and subtit
 ### 4. Track Table
 
 Creates a table of all the tracks within all the files, showing each tracks Name, ID, Language, Type, and Default status.
-- This can be used after Functions 3, 5, and 7 without having to reload the script.
+- This can be used after Functions 3, 5, 7, and 8 without having to reload the script.
 
 ### 5. Remove Tags
 
@@ -79,3 +80,8 @@ This function renames a single track across all files
 - The user first has to identify which track to rename in the format: _type_+_local track number_
   - v= video, a= audio, s= subtitle
   - local track number is relative to the amount of tracks of a certain type, e.g. if you have 2 audio tracks and want to edit the second you would input: v2
+
+### 8. Remove Independent Title
+
+This function removes the independent title tag within the mkv files and therfore makes the title of the file the same as the filename
+- This is useful if you want to have the title and filename match
