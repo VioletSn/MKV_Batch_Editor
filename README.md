@@ -81,7 +81,7 @@ This function renames a single track across all files
   - v= video, a= audio, s= subtitle
   - local track number is relative to the amount of tracks of a certain type, e.g. if you have 2 audio tracks and want to edit the second you would input: v2
 
-### 8. Remove Independent Title
+### 8. Set Title to Filename
 
-This function removes the independent title tag within the mkv files and therfore makes the title of the file the same as the filename
+This function will set the title of the mkv file to the filename
 - This is useful if you want to have the title and filename match

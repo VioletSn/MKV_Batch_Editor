@@ -45,7 +45,7 @@ $operation = 0
 while ($exit -ne 1) {
 	# Get user confirmation
 	Write-Host "======================== Operation =========================" -ForegroundColor blue
-	$operation = Read-Host -Prompt "Select Operation [Exit(1), Reorder Tracks(2), Language Switcher(3), Track Table(4), Remove Tags(5), Remove Tracks(6), Rename Track(7), Remove Independent Title(8)]"
+	$operation = Read-Host -Prompt "Select Operation [Exit(1), Reorder Tracks(2), Language Switcher(3), Track Table(4), Remove Tags(5), Remove Tracks(6), Rename Track(7), Set Title to Filename(8)]"
 
 	if ($operation -eq "exit" -or $operation -eq "1") {
 		$exit = 1
@@ -159,8 +159,6 @@ while ($exit -ne 1) {
 			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
-				$modified = Get-Item ".\MODIFIED"
-				$modified.Attributes = $modified.Attributes -bor "Hidden"
 
 				Write-Host " >Done" -ForegroundColor green
 			} else {
@@ -714,8 +712,6 @@ while ($exit -ne 1) {
 			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
-				$modified = Get-Item ".\MODIFIED"
-				$modified.Attributes = $modified.Attributes -bor "Hidden"
 				
 				Write-Host " >Done" -ForegroundColor green
 			} else {
@@ -802,48 +798,41 @@ while ($exit -ne 1) {
 				Write-Progress -Completed -Activity "Renaming" -Status "Complete" -PercentComplete 100
 			}
 
-		} elseif ($operation -eq "Remove Independent Title" -or $operation -eq "8") {
-			Write-Host "================= Remove Independent Title =================" -ForegroundColor blue
-			Write-Host "Note- " -NoNewLine -ForegroundColor Yellow
-			Write-Host "This operation will set the mkv title to the filename"
-			$8Confirmation = Read-Host -Prompt "Continue? [Y/N]"
+		} elseif ($operation -eq "Set Title to Filename" -or $operation -eq "8") {
+			Write-Host "=================== Set Title to Filename ==================" -ForegroundColor blue
 
-			if ($8Confirmation -eq "Y" -or $8Confirmation -eq "y") {
-				if ($debug -eq $true) {
-					foreach ($mkvFile in $mkvFiles) {
-						# Run MKVpropedit to remove title tag
-						$8peOutput = & $mkvpropedit "$mkvFile" -d title
+			if ($debug -eq $true) {
+				foreach ($mkvFile in $mkvFiles) {
+					# Run MKVpropedit to remove title tag
+					$8peOutput = & $mkvpropedit "$mkvFile" --edit info --set title="$($mkvFile.BaseName)"
 
-						# Modify and display output
-						$8peOutputLinesMod = $8peOutput.Trim().Split([Environment]::NewLine)
-						foreach ($line in $8peOutputLinesMod) {
-							switch ($line) {
-								"The file is being analyzed." {
-									Write-Host "Analyzing " -NoNewLine
-									Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
-								}
-								"Done." {
-									Write-Host "Done." -ForegroundColor Green
-								}
-								default { Write-Host $line }
+					# Modify and display output
+					$8peOutputLinesMod = $8peOutput.Trim().Split([Environment]::NewLine)
+					foreach ($line in $8peOutputLinesMod) {
+						switch ($line) {
+							"The file is being analyzed." {
+								Write-Host "Analyzing " -NoNewLine
+								Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
 							}
+							"Done." {
+								Write-Host "Done." -ForegroundColor Green
+							}
+							default { Write-Host $line }
 						}
 					}
-					Write-Host "All files processed successfully!" -ForegroundColor green
-				} else {
-					$8processed = 0
-					Write-Host "Processing " -NoNewLine
-					foreach ($mkvFile in $mkvFiles) {
-						Write-Progress -Activity "Remove Title Tag" -Status $mkvFile.BaseName -PercentComplete (($8processed / $fileCount) * 100)
-						$8processed++
-						
-						& $mkvpropedit "$mkvFile" -d title > $null
-					}
-					Write-Host ">Done" -ForegroundColor green
-					Write-Progress -Completed -Activity "Remove Title Tag" -Status "Complete" -PercentComplete 100
 				}
+				Write-Host "All files processed successfully!" -ForegroundColor green
 			} else {
-				$exit = 1
+				$8processed = 0
+				Write-Host "Processing " -NoNewLine
+				foreach ($mkvFile in $mkvFiles) {
+					Write-Progress -Activity "Remove Title Tag" -Status $mkvFile.BaseName -PercentComplete (($8processed / $fileCount) * 100)
+					$8processed++
+					
+					& $mkvpropedit "$mkvFile" --edit info --set title="$($mkvFile.BaseName)" > $null
+				}
+				Write-Host ">Done" -ForegroundColor green
+				Write-Progress -Completed -Activity "Remove Title Tag" -Status "Complete" -PercentComplete 100
 			}
 
 		}
