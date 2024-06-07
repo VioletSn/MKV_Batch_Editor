@@ -57,6 +57,9 @@ while ($exit -ne 1) {
 		Write-Host "Creating temp Folder" -NoNewLine
 		if (!(Test-Path "temp")) {
 			[void] (New-Item -ItemType Directory -Name "temp")
+			$temp = Get-Item ".\temp"
+			$temp.Attributes = $temp.Attributes -bor "Hidden"
+
 			Write-Host " >Done" -ForegroundColor Green
 		} else {
 			Write-Host " >Already Exists" -ForegroundColor Yellow
@@ -156,6 +159,9 @@ while ($exit -ne 1) {
 			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
+				$modified = Get-Item ".\MODIFIED"
+				$modified.Attributes = $modified.Attributes -bor "Hidden"
+
 				Write-Host " >Done" -ForegroundColor green
 			} else {
 				Write-Host " >Already Exists" -ForegroundColor Yellow
@@ -708,6 +714,9 @@ while ($exit -ne 1) {
 			Write-Host "Creating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
+				$modified = Get-Item ".\MODIFIED"
+				$modified.Attributes = $modified.Attributes -bor "Hidden"
+				
 				Write-Host " >Done" -ForegroundColor green
 			} else {
 				Write-Host " >Already Exists" -ForegroundColor Yellow
