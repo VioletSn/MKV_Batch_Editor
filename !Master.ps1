@@ -1,10 +1,9 @@
 [System.Console]::WindowWidth = 200
 [System.Console]::WindowHeight = 40
 
-$debug = $true
-if ($debug -eq $true) {
-	Write-Host "Debug = $debug" -ForegroundColor DarkGray
-}
+
+$debug = $args[0]
+Write-Host "Debug = $debug" -ForegroundColor DarkGray
 
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {

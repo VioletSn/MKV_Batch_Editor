@@ -17,6 +17,8 @@ Anyway if you happen to use this script i hope you like it and any feedback to m
 
 Simply download the "!Master.psy" file and place it in the folder along with the MKV files you want to edit (The script targets .mkv extension and will ignore other files) and then double click to run. If its working properly it should display the files it can see when it opens.
 
+**Note:** There is a debug option on line 4 of the !Master.ps1 which can be set to either $false or $true if you want a cleaner output window with less information.
+
 ### Method 2
 
 If you find youself constantly moving the script around, you can also download the "!RUN - MKVBatchEdit.bat" file and follow the steps:
@@ -26,8 +28,9 @@ If you find youself constantly moving the script around, you can also download t
 
 Now you only have to move the .bat file around and not the main script (more useful if you are editing the main script and dont want multiple versions).
 
+**Note:** There is a debug option at the end of line 3 in the .bat file which can be set to either true or false if you want a cleaner output window with less information.
+
 **Note:** If there are files moved in or out of the folder the script needs restart.
-**Note:** There is a debug option on line 4 of the !Master.ps1 which can be set to $false if you want a more clean output window and less information.
 
 ## Functions
 
