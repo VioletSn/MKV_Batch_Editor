@@ -5,7 +5,7 @@ This Powershell script utilises MKVToolNix to batch edit .MKV files.
 I like to have all my mkv files organised in the same way, but i find it difficult to edit them in other batch programs which feel restricted as they require you to already know what tracks are what in your files and assume that they are all the same.
 The scripts main feature is language swapping currently between two different languages. This changes the default audio and subtitle track on the file so it doesn't need to be changed manually everytime you start the video.
 
-Anyway if you happen to use this script i hope you like it and any feedback to make it better or more efficient would be welcome ❤️
+Anyway if you happen to use this script i hope you like it and any feedback to make it better or more efficient is welcome ❤️
 
 ## Useage
 
