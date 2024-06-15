@@ -1,7 +1,6 @@
 [System.Console]::WindowWidth = 200
 [System.Console]::WindowHeight = 40
 
-
 $debug = $args[0]
 Write-Host "Debug = $debug" -ForegroundColor DarkGray
 
@@ -33,7 +32,14 @@ Get-ChildItem -Filter "*.mkv" | ForEach-Object {
 	Write-Host $_.BaseName
 	$fileCount++
 }
-Write-Host "`nFile Count: $fileCount"
+
+if ($fileCount -eq 0) {
+	Write-Host "`nNo MKV files found`n" -ForegroundColor Red
+	pause
+	Exit
+} else {
+	Write-Host "`nFile Count: $fileCount"
+}
 
 $exit = 0
 $currentTrackCountMis = 0
@@ -51,9 +57,8 @@ while ($exit -ne 1) {
 	} elseif (($operation -lt 2) -or ($operation -gt 8)) {
 		Write-Host "Enter a valid integer input." -ForegroundColor DarkRed
 	} else {
-		Write-Host ""
 		# Create temp folder if it doesn't exist already
-		Write-Host "Creating temp Folder" -NoNewLine
+		Write-Host "`nCreating temp Folder" -NoNewLine
 		if (!(Test-Path "temp")) {
 			[void] (New-Item -ItemType Directory -Name "temp")
 			$temp = Get-Item ".\temp"
@@ -153,9 +158,8 @@ while ($exit -ne 1) {
 				Write-Host $2newTrackOrder
 			}
 
-			Write-Host ""
 			# Ensure "MODIFIED" folder exists
-			Write-Host "Creating MODIFIED Folder" -NoNewLine
+			Write-Host "`nCreating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
 
@@ -167,8 +171,7 @@ while ($exit -ne 1) {
 			# Loop through each MKV file
 			if ($debug -eq $true) {
 				foreach ($mkvFile in $mkvFiles) {
-					Write-Host ""
-					Write-Host "Processing " -NoNewline
+					Write-Host "`nProcessing " -NoNewline
 					Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
 
 					# Create a new file name for the output file
@@ -706,9 +709,8 @@ while ($exit -ne 1) {
 			Write-Host "====================== Remove Tracks =======================" -ForegroundColor blue
 			$6tracksToRemove = Read-Host -Prompt "List Tracks to Remove (e.g. 0,3,4)"
 			
-			Write-Host ""
 			# Ensure "MODIFIED" folder exists
-			Write-Host "Creating MODIFIED Folder" -NoNewLine
+			Write-Host "`nCreating MODIFIED Folder" -NoNewLine
 			if (!(Test-Path -Path "MODIFIED")) {
 				[void] (New-Item -ItemType Directory -Name "MODIFIED")
 				
@@ -720,8 +722,7 @@ while ($exit -ne 1) {
 			# Loop through each MKV file
 			if ($debug -eq $true) {
 				foreach ($mkvFile in $mkvFiles) {
-					Write-Host ""
-					Write-Host "Processing " -NoNewline
+					Write-Host "`nProcessing " -NoNewline
 					Write-Host (">" + $mkvFile.BaseName) -ForegroundColor Yellow
 					
 					# Create a new file name for the output file
