@@ -4,6 +4,15 @@
 $debug = $args[0]
 Write-Host "Debug = $debug" -ForegroundColor DarkGray
 
+# Initialize variables
+$mkvmerge = "C:\Program Files\MKVToolNix\mkvmerge.exe"
+$mkvpropedit = "C:\Program Files\MKVToolNix\mkvpropedit.exe"
+$jsonFilesDirectory = "temp\"
+$exit = 0
+$currentTrackCountMis = 0
+$misMatch = 0
+$operation = 0
+
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {
 	$remainder = $value
@@ -17,13 +26,6 @@ function NotMultipleOf ($value, $divisor) {
 		return $true
 	}
 }
-
-# Set paths to MKVToolNix executables
-$mkvmerge = "C:\Program Files\MKVToolNix\mkvmerge.exe"
-$mkvpropedit = "C:\Program Files\MKVToolNix\mkvpropedit.exe"
-
-# Specify the directory containing JSON files
-$jsonFilesDirectory = "temp\"
 
 # Display files for change
 [int]$fileCount = 0
@@ -40,11 +42,6 @@ if ($fileCount -eq 0) {
 } else {
 	Write-Host "`nFile Count: $fileCount"
 }
-
-$exit = 0
-$currentTrackCountMis = 0
-$misMatch = 0
-$operation = 0
 
 # Main Code
 while ($exit -ne 1) {
