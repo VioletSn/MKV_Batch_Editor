@@ -12,7 +12,7 @@ Write-Host "Debug = $debug" -ForegroundColor DarkGray
 [int]$exit = 0
 [int]$currentTrackCountMis = 0
 [int]$misMatch = 0
-[int]$operation = 0
+$operation = 0
 
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {
@@ -31,7 +31,7 @@ function NotMultipleOf ($value, $divisor) {
 # Display files for change
 Write-Host "════════════════════════ Files For Change ════════════════════════" -ForegroundColor blue
 Get-ChildItem -Filter "*.mkv" | ForEach-Object {
-	Write-Host "  > $($_.BaseName)"
+	Write-Host "> $($_.BaseName)"
 	$fileCount++
 }
 
@@ -41,28 +41,31 @@ if ($fileCount -eq 0) {
 	Exit
 } else {
 	Write-Host "`nFile Count" -NoNewline
-	Write-Host " >$fileCount`n" -ForegroundColor Yellow
+	Write-Host " > $fileCount`n" -ForegroundColor Yellow
 }
 
 # Main Code
 while ($exit -ne 1) {
-	# Get user confirmation
-	Write-Host "════════════════════════ Select Operation ════════════════════════" -ForegroundColor blue
-	$operation = Read-Host "  [1] Exit
-  [2] Reorder Tracks
-  [3] Language Switcher
-  [4] Track Table
-  [5] Remove Tags
-  [6] Remove Tracks
-  [7] Rename Track
-  [8] Set Title to Filename
+    Write-Host "════════════════════════ Select Operation ════════════════════════" -ForegroundColor blue
+    Write-Host "[1] Exit                [5] Remove Tags"
+    Write-Host "[2] Reorder Tracks      [6] Remove Tracks"
+    Write-Host "[3] Language Switcher   [7] Rename Track"
+    Write-Host "[4] Track Table         [8] Set Title to Filename"
 
-Enter your choice (1-8)"
+	do {
+		$operation = Read-Host "Enter your choice (1-8)"
 
-	if ($operation -eq "exit" -or $operation -eq "1") {
+		if ($operation -match "^\d+$") {
+			$operation = [int]$operation
+			if ($operation -ge 1 -and $operation -le 8) {break}
+		}
+
+		Write-Host "Enter a valid integer input (1-8)" -ForegroundColor DarkRed
+	} while ($true)
+
+	# Process valid user input
+	if ($operation -eq "1") {
 		$exit = 1
-	} elseif (($operation -lt 2) -or ($operation -gt 8)) {
-		Write-Host "Enter a valid integer input." -ForegroundColor DarkRed
 	} else {
 		# Create temp folder if it doesn't exist already
 		Write-Host "`nCreating temp Folder" -NoNewLine
@@ -71,9 +74,9 @@ Enter your choice (1-8)"
 			$temp = Get-Item ".\temp"
 			$temp.Attributes = $temp.Attributes -bor "Hidden"
 
-			Write-Host " >Done" -ForegroundColor Green
+			Write-Host " > Done" -ForegroundColor Green
 		} else {
-			Write-Host " >Already Exists" -ForegroundColor Yellow
+			Write-Host " > Already Exists" -ForegroundColor Yellow
 		}
 		
 		$jsonCount = 0
@@ -85,9 +88,7 @@ Enter your choice (1-8)"
 		if ($debug -eq $true) { Write-Host "Generating JSON Files:" }
 		Get-ChildItem -Filter "*.mkv" | ForEach-Object {
 			& $mkvmerge --identification-format json --identify $_.FullName | Out-File "temp\$($_.BaseName.Replace('[','').Replace(']','')).json"
-			if ($debug -eq $true) {
-				Write-Host "Done > $($_.Name)" -ForegroundColor Magenta
-			}
+			if ($debug -eq $true) { Write-Host "Done > $($_.Name)" -ForegroundColor Magenta }
 			$jsonCount++
 			$jsonFile = "temp\$($_.BaseName.Replace('[','').Replace(']','')).json"
 			$jsonContent = Get-Content $jsonFile
@@ -101,7 +102,7 @@ Enter your choice (1-8)"
 		# Check if Track Counts are Equal Across mkv Files
 		if ($jsonCount -eq $fileCount) {
 			if ($debug -eq $false) { Write-Host "Checking Track Equality" -NoNewLine }
-			if ($debug -eq $true) { Write-Host "Checking Track Equality:" }
+			if ($debug -eq $true) { Write-Host "`nChecking Track Equality:" }
 			
 			$countTable = @{} # Hashtable to store the count of each value in trackCounts hashtable
 			# Count occurrences of each value
@@ -117,7 +118,7 @@ Enter your choice (1-8)"
 			$modeTrackCount = ($countTable.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
 			if ($debug -eq $true) {
 				Write-Host "Mode Tracks " -NoNewline
-				Write-Host ">$modeTrackCount" -ForegroundColor Yellow
+				Write-Host "> $modeTrackCount" -ForegroundColor Yellow
 			}
 			
 			# Identify keys with mismatching track counts
@@ -132,30 +133,30 @@ Enter your choice (1-8)"
 				$misMatch = 1
 				$currentTrackCountMis = $modeTrackCount
 				if ($debug -eq $false) {
-					Write-Host " >Mismatch Found in the Following Files:" -ForegroundColor DarkRed
+					Write-Host " > Mismatch Found in the Following Files:" -ForegroundColor DarkRed
 				} else {
 					Write-Host "Mismatch Found in the Following Files:" -ForegroundColor DarkRed
 				}
 				$mismatchedKeys | ForEach-Object {
-					Write-Host " - ("$trackCounts[$_] Tracks") $_" -ForegroundColor Red
+					Write-Host " > ("$trackCounts[$_] Tracks") $_" -ForegroundColor Red
 					if ($trackCounts[$_] -gt $currentTrackCountMis) {
 						$currentTrackCountMis = $trackCounts[$_]
-						if ($debug -eq $true) { Write-Host "Highest Count: $currentTrackCountMis" -ForegroundColor Magenta }
+						if ($debug -eq $true) { Write-Host "Highest Count > $currentTrackCountMis" -ForegroundColor Magenta }
 					}
 				}
 				Write-Host ""
 			} else {
 				$misMatch = 0
 				if ($debug -eq $false) {
-					Write-Host " >Matching`n" -ForegroundColor Green
+					Write-Host " > Matching`n" -ForegroundColor Green
 				} else {
-					Write-Host "All files have matching track counts" -ForegroundColor Green
+					Write-Host "All files have matching track counts`n" -ForegroundColor Green
 				}
 			}
 		}
 		
-		if ($operation -eq "Reorder Tracks" -or $operation -eq "2") {
-			Write-Host "====================== Reorder Tracks ======================" -ForegroundColor blue
+		if ($operation -eq "2") {
+			Write-Host "═════════════════════════ Reorder Tracks ═════════════════════════" -ForegroundColor blue
 			
 			$2newTrackOrder = Read-Host -Prompt "Enter new track order (e.g., 0,1,2,4,3)"
 			# Convert user input to MKVmerge format
@@ -213,8 +214,8 @@ Enter your choice (1-8)"
 				Write-Progress -Completed -Activity "Reordering" -Status "Complete" -PercentComplete 100
 			}
 			
-		} elseif ($operation -eq "Language Switcher" -or $operation -eq "3") {
-			Write-Host "===================== Language Switcher =====================" -ForegroundColor blue
+		} elseif ($operation -eq "3") {
+			Write-Host "═══════════════════════ Language Switcher ════════════════════════" -ForegroundColor blue
 			
 			# Initiate array structures and variables
 			$array = @() # for all track information
@@ -607,8 +608,8 @@ Enter your choice (1-8)"
 				Write-Host "Adjacent track properties are DIFFERENT" -ForegroundColor DarkRed
 			}
 			
-		} elseif ($operation -eq "Track Table" -or $operation -eq "4") {
-			Write-Host "======================= Track Table ========================" -ForegroundColor blue
+		} elseif ($operation -eq "4") {
+			Write-Host "══════════════════════════ Track Table ═══════════════════════════" -ForegroundColor blue
 			
 			# Extract track information from all JSON files
 			$array = @()
@@ -620,23 +621,29 @@ Enter your choice (1-8)"
 						
 						if ($jsonData.tracks.Count -gt $counter) {
 							# Create track object if track exists
+							$defaultText = if ($jsonData.tracks[$counter].properties.default_track) {
+								"`e[32mTrue`e[0m"
+							} else {
+								"`e[31mFalse`e[0m"
+							}
+
 							$trackInfo = [PSCustomObject]@{
-								FileOrigin = $_.BaseName
-								Name = $jsonData.tracks[$counter].properties.track_name
-								ID = $jsonData.tracks[$counter].id
-								Language = $jsonData.tracks[$counter].properties.language
-								Type = $jsonData.tracks[$counter].type
-								Default = $jsonData.tracks[$counter].properties.default_track
+								FileOrigin	= $_.BaseName
+								Name 		= $jsonData.tracks[$counter].properties.track_name
+								ID 			= $jsonData.tracks[$counter].id
+								Language 	= $jsonData.tracks[$counter].properties.language
+								Type 		= $jsonData.tracks[$counter].type
+								Default 	= $defaultText
 							}
 						} else {
 							# Create "null" row if track is missing
 							$trackInfo = [PSCustomObject]@{
-								FileOrigin = "-null-"
-								Name = ""
-								ID = ""
-								Language = ""
-								Type = ""
-								Default = ""
+								FileOrigin 	= "-null-"
+								Name 		= ""
+								ID 			= ""
+								Language 	= ""
+								Type 		= ""
+								Default 	= ""
 							}
 						}
 						$array += $trackInfo
@@ -647,15 +654,21 @@ Enter your choice (1-8)"
 				while ($counter -le $currentTrackCount -1) {
 					Get-ChildItem -Path $jsonFilesDirectory -Filter "*.json" -Recurse | ForEach-Object {
 						$jsonData = Get-Content -Path $_.FullName -Raw | ConvertFrom-Json
+
+						$defaultText = if ($jsonData.tracks[$counter].properties.default_track) {
+							"`e[32mTrue`e[0m"
+						} else {
+							"`e[31mFalse`e[0m"
+						}
 						
 						# Create track object
 						$trackInfo = [PSCustomObject]@{
-							FileOrigin = $_.BaseName
-							Name = $jsonData.tracks[$counter].properties.track_name
-							ID = $jsonData.tracks[$counter].id
-							Language = $jsonData.tracks[$counter].properties.language
-							Type = $jsonData.tracks[$counter].type
-							Default = $jsonData.tracks[$counter].properties.default_track
+							FileOrigin	= $_.BaseName
+							Name 		= $jsonData.tracks[$counter].properties.track_name
+							ID 			= $jsonData.tracks[$counter].id
+							Language 	= $jsonData.tracks[$counter].properties.language
+							Type 		= $jsonData.tracks[$counter].type
+							Default 	= $defaultText
 						}
 						$array += $trackInfo
 					}
@@ -666,8 +679,8 @@ Enter your choice (1-8)"
 			# Generate the table
 			$array | Format-Table -Autosize -Wrap
 			
-		} elseif ($operation -eq "Remove Tags" -or $operation -eq "5") {
-			Write-Host "======================= Remove Tags ========================" -ForegroundColor blue
+		} elseif ($operation -eq "5") {
+			Write-Host "══════════════════════════ Remove Tags ═══════════════════════════" -ForegroundColor blue
 			Write-Host "WARNING- " -NoNewLine -ForegroundColor DarkRed
 			Write-Host "This Operation Removes ALL Tags from the file." -ForegroundColor Red
 			$5Confirmation = Read-Host -Prompt "Continue? [Y/N]"
@@ -712,8 +725,8 @@ Enter your choice (1-8)"
 				$exit = 1
 			}
 			
-		} elseif ($operation -eq "Remove Tracks" -or $operation -eq "6") {
-			Write-Host "====================== Remove Tracks =======================" -ForegroundColor blue
+		} elseif ($operation -eq "6") {
+			Write-Host "═════════════════════════ Remove Tracks ══════════════════════════" -ForegroundColor blue
 			$6tracksToRemove = Read-Host -Prompt "List Tracks to Remove (e.g. 0,3,4)"
 			
 			# Ensure "MODIFIED" folder exists
@@ -764,8 +777,8 @@ Enter your choice (1-8)"
 				Write-Progress -Completed -Activity "Removing Tracks" -Status "Complete" -PercentComplete 100
 			}
 
-		} elseif ($operation -eq "Rename Track" -or $operation -eq "7") {
-			Write-Host "======================= Rename Track =======================" -ForegroundColor blue
+		} elseif ($operation -eq "7") {
+			Write-Host "══════════════════════════ Rename Track ══════════════════════════" -ForegroundColor blue
 			$7renameTrack = Read-Host -Prompt "Which track do you want to rename? (e.g. v1,a2)"
 			$7newName = Read-Host -Prompt "Enter the new name"
 			Write-Host ""
@@ -805,8 +818,8 @@ Enter your choice (1-8)"
 				Write-Progress -Completed -Activity "Renaming" -Status "Complete" -PercentComplete 100
 			}
 
-		} elseif ($operation -eq "Set Title to Filename" -or $operation -eq "8") {
-			Write-Host "=================== Set Title to Filename ==================" -ForegroundColor blue
+		} elseif ($operation -eq "8") {
+			Write-Host "═════════════════════ Set Title to Filename ══════════════════════" -ForegroundColor blue
 
 			if ($debug -eq $true) {
 				foreach ($mkvFile in $mkvFiles) {
