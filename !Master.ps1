@@ -29,9 +29,9 @@ function NotMultipleOf ($value, $divisor) {
 }
 
 # Display files for change
-Write-Host "===================== Files For Change =====================" -ForegroundColor blue
+Write-Host "════════════════════════ Files For Change ════════════════════════" -ForegroundColor blue
 Get-ChildItem -Filter "*.mkv" | ForEach-Object {
-	Write-Host $_.BaseName
+	Write-Host "  > $($_.BaseName)"
 	$fileCount++
 }
 
@@ -40,14 +40,24 @@ if ($fileCount -eq 0) {
 	pause
 	Exit
 } else {
-	Write-Host "`nFile Count: $fileCount"
+	Write-Host "`nFile Count" -NoNewline
+	Write-Host " >$fileCount`n" -ForegroundColor Yellow
 }
 
 # Main Code
 while ($exit -ne 1) {
 	# Get user confirmation
-	Write-Host "======================== Operation =========================" -ForegroundColor blue
-	$operation = Read-Host -Prompt "Select Operation [Exit(1), Reorder Tracks(2), Language Switcher(3), Track Table(4), Remove Tags(5), Remove Tracks(6), Rename Track(7), Set Title to Filename(8)]"
+	Write-Host "════════════════════════ Select Operation ════════════════════════" -ForegroundColor blue
+	$operation = Read-Host "  [1] Exit
+  [2] Reorder Tracks
+  [3] Language Switcher
+  [4] Track Table
+  [5] Remove Tags
+  [6] Remove Tracks
+  [7] Rename Track
+  [8] Set Title to Filename
+
+Enter your choice (1-8)"
 
 	if ($operation -eq "exit" -or $operation -eq "1") {
 		$exit = 1
