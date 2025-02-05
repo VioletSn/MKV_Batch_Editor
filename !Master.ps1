@@ -1,17 +1,18 @@
 [System.Console]::WindowWidth = 200
 [System.Console]::WindowHeight = 40
 
-$debug = $args[0]
+$debug = $args[0] # Check if the script is in debug mode from .bat file
 Write-Host "Debug = $debug" -ForegroundColor DarkGray
 
 # Initialize variables
-$mkvmerge = "C:\Program Files\MKVToolNix\mkvmerge.exe"
-$mkvpropedit = "C:\Program Files\MKVToolNix\mkvpropedit.exe"
-$jsonFilesDirectory = "temp\"
-$exit = 0
-$currentTrackCountMis = 0
-$misMatch = 0
-$operation = 0
+[string]$mkvmerge = "C:\Program Files\MKVToolNix\mkvmerge.exe"
+[string]$mkvpropedit = "C:\Program Files\MKVToolNix\mkvpropedit.exe"
+[string]$jsonFilesDirectory = "temp\"
+[int]$fileCount = 0
+[int]$exit = 0
+[int]$currentTrackCountMis = 0
+[int]$misMatch = 0
+[int]$operation = 0
 
 # Returns true if first input (value) is not a multiple of the second (divisor)
 function NotMultipleOf ($value, $divisor) {
@@ -28,7 +29,6 @@ function NotMultipleOf ($value, $divisor) {
 }
 
 # Display files for change
-[int]$fileCount = 0
 Write-Host "===================== Files For Change =====================" -ForegroundColor blue
 Get-ChildItem -Filter "*.mkv" | ForEach-Object {
 	Write-Host $_.BaseName
